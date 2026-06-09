@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { LayoutDashboard, Shield, Settings, FileText, Users, AlertTriangle, FileSearch } from "lucide-react";
+import { LayoutDashboard, Shield, Settings, FileText, Users, TriangleAlert as AlertTriangle, FileSearch } from "lucide-react";
 
 export interface NavigationItem {
   key: string;

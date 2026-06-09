@@ -9,7 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, X } from "lucide-react";
+import { MoveHorizontal as MoreHorizontal, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export interface BulkAction {

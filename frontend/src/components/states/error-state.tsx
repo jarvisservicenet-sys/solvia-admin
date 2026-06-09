@@ -2,7 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, RefreshCw } from "lucide-react";
+import { CircleAlert as AlertCircle, RefreshCw } from "lucide-react";
 
 interface ErrorStateProps {
   title?: string;

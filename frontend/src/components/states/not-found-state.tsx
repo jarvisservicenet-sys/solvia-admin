@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { SearchX, Home } from "lucide-react";
+import { SearchX, Hop as Home } from "lucide-react";
 import Link from "next/link";
 
 interface NotFoundStateProps {

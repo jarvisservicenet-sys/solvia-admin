@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronRight, Home } from "lucide-react";
+import { ChevronRight, Hop as Home } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface BreadcrumbItem {

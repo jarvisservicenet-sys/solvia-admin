@@ -2,7 +2,7 @@
 
 import { Component, type ReactNode, type ErrorInfo } from "react";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, RefreshCw, Home } from "lucide-react";
+import { TriangleAlert as AlertTriangle, RefreshCw, Hop as Home } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ErrorBoundaryProps {
