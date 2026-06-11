@@ -7,23 +7,27 @@ import type {
   CreateUserData,
   UpdateUserData,
   AssignRoleData,
-  UsersDashboard,
+  LifecycleActionData,
+  UserSecurityProfile,
+  AuditQueryParams,
+  AuditSearchResponse,
+  UserRiskProfile,
+  SecurityTimeline,
+  AlertQueryParams,
+  AlertSearchResponse,
 } from "../types";
 
 export const usersApi = {
-  getDashboard(): Promise<UsersDashboard> {
-    return apiClient.get<UsersDashboard>("/users/dashboard");
-  },
-
   getList(params?: UsersQueryParams): Promise<UsersListResponse> {
     const queryParams = new URLSearchParams();
     if (params?.page) queryParams.set("page", String(params.page));
     if (params?.limit) queryParams.set("limit", String(params.limit));
-    if (params?.search) queryParams.set("search", params.search);
+    if (params?.email) queryParams.set("email", params.email);
     if (params?.status) queryParams.set("status", params.status);
-    if (params?.role) queryParams.set("role", params.role);
-    if (params?.sortBy) queryParams.set("sortBy", params.sortBy);
-    if (params?.sortOrder) queryParams.set("sortOrder", params.sortOrder);
+    if (params?.roleCode) queryParams.set("roleCode", params.roleCode);
+    if (params?.createdFrom) queryParams.set("createdFrom", params.createdFrom);
+    if (params?.createdTo) queryParams.set("createdTo", params.createdTo);
+    if (params?.sortDirection) queryParams.set("sortDirection", params.sortDirection);
 
     const queryString = queryParams.toString();
     return apiClient.get<UsersListResponse>(`/users${queryString ? `?${queryString}` : ""}`);
@@ -38,67 +42,104 @@ export const usersApi = {
   },
 
   update(id: string, data: UpdateUserData): Promise<User> {
-    return apiClient.patch<User>(`/users/${id}`, data);
+    return apiClient.post<User>(`/users/${id}`, data);
   },
 
-  delete(id: string): Promise<void> {
-    return apiClient.delete<void>(`/users/${id}`);
+  // Lifecycle
+  suspend(id: string, data: LifecycleActionData): Promise<User> {
+    return apiClient.post<User>(`/users/${id}/suspend`, data);
   },
 
   activate(id: string): Promise<User> {
     return apiClient.post<User>(`/users/${id}/activate`, {});
   },
 
-  deactivate(id: string): Promise<User> {
-    return apiClient.post<User>(`/users/${id}/deactivate`, {});
+  disable(id: string, data: LifecycleActionData): Promise<User> {
+    return apiClient.post<User>(`/users/${id}/disable`, data);
   },
 
-  suspend(id: string, reason: string): Promise<User> {
-    return apiClient.post<User>(`/users/${id}/suspend`, { reason });
+  archive(id: string, data: LifecycleActionData): Promise<User> {
+    return apiClient.post<User>(`/users/${id}/archive`, data);
   },
 
-  unsuspend(id: string): Promise<User> {
-    return apiClient.post<User>(`/users/${id}/unsuspend`, {});
+  // Security Control
+  forceLogout(id: string): Promise<{ message: string }> {
+    return apiClient.post<{ message: string }>(`/users/${id}/force-logout`, {});
   },
 
-  getRoles(userId: string): Promise<AssignRoleData[]> {
-    return apiClient.get<AssignRoleData[]>(`/users/${userId}/roles`);
+  revokeSessions(id: string): Promise<{ message: string }> {
+    return apiClient.post<{ message: string }>(`/users/${id}/revoke-sessions`, {});
   },
 
-  assignRole(userId: string, data: AssignRoleData): Promise<void> {
-    return apiClient.post<void>(`/users/${userId}/roles`, data);
+  adminResetPassword(id: string, password: string): Promise<{ message: string }> {
+    return apiClient.post<{ message: string }>(`/users/${id}/reset-password`, { password });
   },
 
-  removeRole(userId: string, roleId: string): Promise<void> {
-    return apiClient.delete<void>(`/users/${userId}/roles/${roleId}`);
+  adminDisable2FA(id: string): Promise<{ message: string }> {
+    return apiClient.post<{ message: string }>(`/users/${id}/disable-2fa`, {});
   },
 
-  getPermissions(userId: string): Promise<unknown[]> {
-    return apiClient.get<unknown[]>(`/users/${userId}/permissions`);
+  // RBAC
+  getRoles(userId: string): Promise<UserWithRoles["roles"]> {
+    return apiClient.get<UserWithRoles["roles"]>(`/users/${userId}/roles`);
   },
 
-  getSecurityProfile(userId: string): Promise<unknown> {
-    return apiClient.get<unknown>(`/users/${userId}/security`);
+  assignRole(userId: string, data: AssignRoleData): Promise<{ message: string }> {
+    return apiClient.post<{ message: string }>(`/users/${userId}/roles`, data);
   },
 
-  getActivity(userId: string, params?: { limit?: number }): Promise<unknown[]> {
-    const queryParams = params?.limit ? `?limit=${params.limit}` : "";
-    return apiClient.get<unknown[]>(`/users/${userId}/activity${queryParams}`);
+  removeRole(userId: string, roleId: string): Promise<{ message: string }> {
+    return apiClient.delete<{ message: string }>(`/users/${userId}/roles/${roleId}`);
   },
 
-  bulkActivate(ids: string[]): Promise<{ success: number; failed: number }> {
-    return apiClient.post<{ success: number; failed: number }>("/users/bulk/activate", { ids });
+  getPermissions(userId: string): Promise<string[]> {
+    return apiClient.get<string[]>(`/users/${userId}/permissions`);
   },
 
-  bulkDeactivate(ids: string[]): Promise<{ success: number; failed: number }> {
-    return apiClient.post<{ success: number; failed: number }>("/users/bulk/deactivate", { ids });
+  // Security Profile
+  getSecurityProfile(userId: string): Promise<UserSecurityProfile> {
+    return apiClient.get<UserSecurityProfile>(`/users/${userId}/security-profile`);
   },
 
-  bulkSuspend(ids: string[], reason: string): Promise<{ success: number; failed: number }> {
-    return apiClient.post<{ success: number; failed: number }>("/users/bulk/suspend", { ids, reason });
+  // Audit (GET /audit with userId filter)
+  getAuditLogs(params: AuditQueryParams): Promise<AuditSearchResponse> {
+    const queryParams = new URLSearchParams();
+    if (params.page) queryParams.set("page", String(params.page));
+    if (params.limit) queryParams.set("limit", String(params.limit));
+    if (params.event) queryParams.set("event", params.event);
+    if (params.module) queryParams.set("module", params.module);
+    if (params.userId) queryParams.set("userId", params.userId);
+    if (params.resourceType) queryParams.set("resourceType", params.resourceType);
+    if (params.resourceId) queryParams.set("resourceId", params.resourceId);
+    if (params.dateFrom) queryParams.set("dateFrom", params.dateFrom);
+    if (params.dateTo) queryParams.set("dateTo", params.dateTo);
+    if (params.sortDirection) queryParams.set("sortDirection", params.sortDirection);
+    const queryString = queryParams.toString();
+    return apiClient.get<AuditSearchResponse>(`/audit${queryString ? `?${queryString}` : ""}`);
   },
 
-  bulkDelete(ids: string[]): Promise<{ success: number; failed: number }> {
-    return apiClient.post<{ success: number; failed: number }>("/users/bulk/delete", { ids });
+  // Risk Profile (GET /security/users/:id/risk)
+  getUserRisk(userId: string): Promise<UserRiskProfile> {
+    return apiClient.get<UserRiskProfile>(`/security/users/${userId}/risk`);
+  },
+
+  // Security Timeline (GET /security/users/:id/timeline)
+  getUserSecurityTimeline(userId: string): Promise<SecurityTimeline> {
+    return apiClient.get<SecurityTimeline>(`/security/users/${userId}/timeline`);
+  },
+
+  // Security Alerts (GET /security/alerts)
+  getAlerts(params: AlertQueryParams): Promise<AlertSearchResponse> {
+    const queryParams = new URLSearchParams();
+    if (params.page) queryParams.set("page", String(params.page));
+    if (params.limit) queryParams.set("limit", String(params.limit));
+    if (params.type) queryParams.set("type", params.type);
+    if (params.severity) queryParams.set("severity", params.severity);
+    if (params.status) queryParams.set("status", params.status);
+    if (params.dateFrom) queryParams.set("dateFrom", params.dateFrom);
+    if (params.dateTo) queryParams.set("dateTo", params.dateTo);
+    if (params.sortDirection) queryParams.set("sortDirection", params.sortDirection);
+    const queryString = queryParams.toString();
+    return apiClient.get<AlertSearchResponse>(`/security/alerts${queryString ? `?${queryString}` : ""}`);
   },
 };
